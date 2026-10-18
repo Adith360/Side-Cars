@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6f1">
+    <title>Sidecar — rides going your way</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#rides" aria-label="Sidecar home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>sidecar<span class="brand-period">.</span></span>
+      </a>
+      <nav class="primary-nav" aria-label="Main navigation">
+        <a href="#rides" data-page-link="rides">Rides</a>
+        <a href="#requests" data-page-link="requests" id="requests-nav-link" hidden>Requests</a>
+        <a href="#settings" data-page-link="settings">Settings</a>
+        <a href="#about" data-page-link="about">About</a>
+        <a href="#account" data-page-link="account" id="account-nav-link">Sign in</a>
+      </nav>
+      <div class="topbar-right">
+        <div class="live-indicator"><span class="live-dot"></span><span id="live-label">Live nearby</span></div>
+        <button class="offer-button" id="open-offer" type="button"><span class="button-plus">+</span> Offer a seat</button>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <div class="app-page" id="rides-page" data-page="rides">
+      <section class="search-panel" aria-label="Ride search">
+        <div class="panel-intro">
+          <span class="eyebrow">YOUR NEXT RIDE IS CLOSER</span>
+          <h1>Going somewhere?</h1>
+          <p>Find a seat with someone already headed your way.</p>
+        </div>
+        <div class="search-controls">
+          <label class="control-label" for="heading-select">HEADING</label>
+          <div class="select-wrap">
+            <span class="direction-arrow" aria-hidden="true">↗</span>
+            <select id="heading-select" aria-label="Choose your direction">
+              <option value="90" selected>East · Indiranagar</option>
+              <option value="45">Northeast · Whitefield</option>
+              <option value="0">North · Hebbal</option>
+              <option value="180">South · Jayanagar</option>
+              <option value="270">West · Malleshwaram</option>
+            </select>
+            <span class="select-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="radius-control">
+            <div class="radius-heading"><label class="control-label" for="radius-range">PICKUP RADIUS</label><span><strong id="radius-value">2</strong> km</span></div>
+            <input id="radius-range" type="range" min="0.5" max="5" step="0.5" value="2" aria-label="Pickup radius in kilometers">
+          </div>
+          <button class="location-button" id="use-location" type="button"><span aria-hidden="true">◎</span><span id="location-label">Near MG Road, Bangalore</span><span class="location-edit">Change</span></button>
+        </div>
+      </section>
+
+      <section class="results-layout" aria-label="Nearby rides">
+        <div class="map-wrap">
+          <div id="map" role="application" aria-label="Map of nearby rides"></div>
+          <div class="map-caption"><span class="map-caption-dot"></span><span id="map-caption">MG ROAD, BENGALURU</span></div>
+          <button class="map-center" id="center-map" type="button" aria-label="Center map on your location" title="Center on me"><span>◎</span></button>
+          <div class="map-legend"><span><i class="legend-you"></i>You</span><span><i class="legend-ride"></i>Pickup</span><span><i class="legend-route"></i>Route</span></div>
+        </div>
+
+        <aside class="ride-panel">
+          <div class="ride-panel-head">
+            <div><span class="eyebrow">ON YOUR WAY</span><h2>Rides nearby <span class="result-count" id="result-count">0</span></h2></div>
+            <button class="sort-button" id="refresh-rides" type="button" aria-label="Refresh rides" title="Refresh rides"><span>↻</span></button>
+          </div>
+          <div class="ride-feed" id="ride-feed" aria-live="polite"></div>
+          <div class="empty-state" id="empty-state" hidden>
+            <div class="empty-icon" aria-hidden="true">⌁</div>
+            <strong>No rides on this route yet</strong>
+            <p>Try a wider pickup radius or check back in a moment.</p>
+            <button id="empty-offer" type="button">Offer the first seat <span>↗</span></button>
+          </div>
+          <div class="panel-foot"><span class="foot-pulse"></span><span>Updates as new rides pop up</span><span class="foot-separator">·</span><span id="data-mode">DEMO MODE</span></div>
+        </aside>
+      </section>
+      </div>
+
+      <section class="app-page secondary-page requests-page" id="requests-page" data-page="requests" hidden>
+        <header class="requests-heading">
+          <div><span class="eyebrow">YOUR OPEN SEATS</span><h1>Ride requests</h1><p>Review people asking to join one of your rides.</p></div>
+          <button class="sort-button" id="refresh-requests" type="button" aria-label="Refresh requests" title="Refresh requests"><span>↻</span></button>
+        </header>
+        <p class="requests-feedback" id="requests-feedback" role="status" aria-live="polite"></p>
+        <div class="request-list" id="request-list" aria-live="polite"></div>
+        <div class="requests-empty" id="requests-empty" hidden>
+          <span class="requests-empty-mark" aria-hidden="true">↗</span>
+          <strong>No requests yet</strong>
+          <p>When someone asks to join a ride you offered, their request will appear here.</p>
+          <a href="#rides">Back to rides <b>↗</b></a>
+        </div>
+      </section>
+
+      <section class="app-page secondary-page settings-page" id="settings-page" data-page="settings" hidden>
+        <header class="page-heading">
+          <span class="eyebrow">MAKE IT YOURS</span>
+          <h1>Settings</h1>
+          <p>Your ride search, the way you like it.</p>
+        </header>
+        <div class="settings-layout">
+          <section class="settings-group" aria-labelledby="search-preferences-title">
+            <div class="settings-group-heading">
+              <span class="settings-index">01</span>
+              <div><h2 id="search-preferences-title">Search preferences</h2><p>Choose what counts as a ride going your way.</p></div>
+            </div>
+            <div class="settings-row">
+              <label for="settings-heading">Preferred direction</label>
+              <select id="settings-heading" class="settings-select">
+                <option value="90">East · Indiranagar</option>
+                <option value="45">Northeast · Whitefield</option>
+                <option value="0">North · Hebbal</option>
+                <option value="180">South · Jayanagar</option>
+                <option value="270">West · Malleshwaram</option>
+              </select>
+            </div>
+            <div class="settings-row settings-radius-row">
+              <label for="settings-radius">Maximum pickup distance <strong><span id="settings-radius-value">2</span> km</strong></label>
+              <input id="settings-radius" type="range" min="0.5" max="5" step="0.5" value="2">
+            </div>
+          </section>
+
+          <section class="settings-group" aria-labelledby="privacy-title">
+            <div class="settings-group-heading">
+              <span class="settings-index">02</span>
+              <div><h2 id="privacy-title">Updates</h2><p>Choose when Sidecar checks for new seats.</p></div>
+            </div>
+            <div class="settings-row live-setting-row">
+              <div><strong>Live ride updates</strong><span>Refresh nearby rides as seats are posted or reserved.</span></div>
+              <label class="switch-control" for="live-updates-toggle"><input id="live-updates-toggle" type="checkbox" checked><span aria-hidden="true"></span></label>
+            </div>
+          </section>
+          <p class="settings-saved" id="settings-saved" role="status">Preferences save automatically on this device.</p>
+        </div>
+      </section>
+
+      <section class="app-page secondary-page about-page" id="about-page" data-page="about" hidden>
+        <header class="about-hero">
+          <div class="about-hero-copy"><span class="eyebrow">A LITTLE CLOSER, TOGETHER</span><h1>Good rides<br>go both ways.</h1><p>Sidecar connects people heading in the same direction, so an open seat can make someone else’s day easier.</p></div>
+          <div class="about-route-art" aria-hidden="true"><span class="about-route-label">MG ROAD</span><i></i><span class="about-route-stop"></span><b>→</b><span class="about-route-stop"></span><i></i><span class="about-route-label">YOUR WAY</span></div>
+          <span class="about-city">BENGALURU · EST. TODAY</span>
+        </header>
+        <section class="about-values" aria-label="About Sidecar">
+          <article><span class="eyebrow">01 / FIND</span><h2>Same way, less waiting.</h2><p>See nearby rides that match your direction, with pickup distance and route details up front.</p></article>
+          <article><span class="eyebrow">02 / SHARE</span><h2>Make an open seat count.</h2><p>Offer a ride with a clear destination, available seats, and a simple per-seat split.</p></article>
+          <article><span class="eyebrow">03 / GO</span><h2>Know the route first.</h2><p>Compare the pickup, drop-off, driver, and route before you request a seat.</p></article>
+        </section>
+        <div class="about-signoff"><span>Built for everyday Bengaluru.</span><a href="#rides">Find your ride <b>↗</b></a></div>
+      </section>
+
+      <section class="app-page account-page" id="account-page" data-page="account" hidden>
+        <div class="account-layout">
+          <aside class="account-aside">
+            <span class="eyebrow">SIDE BY SIDE</span>
+            <h1>There’s room<br>for you.</h1>
+            <p>Find your people, share the way, and make the everyday trip a little easier.</p>
+            <div class="account-route" aria-hidden="true"><span></span><i></i><b>↗</b><i></i><span></span></div>
+            <span class="account-city">BENGALURU · INDIA</span>
+          </aside>
+          <section class="account-main" aria-labelledby="account-title">
+            <div id="account-form-view">
+              <span class="eyebrow">YOUR SIDEcar ACCOUNT</span>
+              <h2 id="account-title">Welcome aboard.</h2>
+              <p class="account-intro">Save your details and get going.</p>
+              <div class="auth-tabs" role="group" aria-label="Account action">
+                <button type="button" data-auth-mode="register" aria-pressed="true">Create account</button>
+                <button type="button" data-auth-mode="login" aria-pressed="false">Log in</button>
+              </div>
+              <form id="account-form">
+                <div class="account-profile-fields" id="account-profile-fields">
+                  <span class="account-section-label">PROFILE DETAILS</span>
+                  <label class="account-field">Your name<input name="name" autocomplete="name" maxlength="48" placeholder="Jamie Rivera" required></label>
+                  <label class="account-field">Place / city<input name="place" autocomplete="address-level2" maxlength="80" placeholder="Bengaluru" required></label>
+                  <label class="account-field">Age<input name="age" type="number" min="0" max="120" inputmode="numeric" placeholder="25" required></label>
+                  <label class="account-field">Date of birth<input name="dob" type="date" autocomplete="bday" required></label>
+                  <label class="account-field">Address<input name="address" autocomplete="street-address" maxlength="200" placeholder="Area, city, state" required></label>
+                  <label class="account-field">Occupation<input name="occupation" autocomplete="organization-title" maxlength="80" placeholder="Student, designer, engineer…" required></label>
+                  <label class="account-field">Gender<select name="gender" required>
+                    <option value="" selected disabled>Select one</option>
+                    <option>Woman</option>
+                    <option>Man</option>
+                    <option>Non-binary</option>
+                    <option>Prefer not to say</option>
+                    <option>Self-describe</option>
+                  </select></label>
+                  <label class="account-consent"><input name="profileConsent" type="checkbox" required><span>I agree to store these details in my ride profile.</span></label>
+                </div>
+                <label class="account-field">Email address<input name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required></label>
+                <label class="account-field">Password<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="At least 8 characters" required></label>
+                <p class="account-feedback" id="account-feedback" role="status" aria-live="polite"></p>
+                <button class="submit-offer account-submit" id="account-submit" type="submit">Create my account <span>↗</span></button>
+              </form>
+            </div>
+            <div class="account-confirmation" id="account-confirmation" hidden>
+              <span class="eyebrow">YOU’RE IN</span>
+              <h2>Good to have you, <span id="account-user-name">Jamie</span>.</h2>
+              <p>Your Sidecar account is ready. Find a ride or share an open seat.</p>
+              <div class="account-actions"><a href="#rides">Explore rides <b>↗</b></a><button id="account-logout" type="button">Log out</button></div>
+            </div>
+            <p class="account-privacy">Credentials and profile details are stored separately. Your password is never stored as plain text.</p>
+          </section>
+        </div>
+      </section>
+      <footer class="page-foot"><span>GOOD RIDES, BETTER TOGETHER.</span><span>MADE FOR THE WAY YOU GO <b>↗</b></span></footer>
+    </main>
+
+    <dialog class="offer-dialog" id="offer-dialog">
+      <form id="offer-form">
+        <div class="dialog-head"><div><span class="eyebrow">SHARE YOUR ROUTE</span><h2>Offer a seat</h2></div><button class="dialog-close" id="close-offer" type="button" aria-label="Close">×</button></div>
+        <div class="form-grid">
+          <label>Your name<input name="name" required maxlength="48" placeholder="Jamie Rivera"></label>
+          <label>Your car<input name="car" maxlength="48" placeholder="Blue Prius"></label>
+          <label>Starting from<input name="from" required maxlength="48" placeholder="Hayes Valley"></label>
+          <label>Heading to<select name="to" id="destination-select" required>
+            <option value="Indiranagar" data-lat="12.9784" data-lng="77.6409">Indiranagar</option>
+            <option value="Whitefield" data-lat="12.9698" data-lng="77.75">Whitefield</option>
+            <option value="Koramangala" data-lat="12.9352" data-lng="77.6245">Koramangala</option>
+            <option value="Hebbal" data-lat="13.0358" data-lng="77.597">Hebbal</option>
+            <option value="Jayanagar" data-lat="12.925" data-lng="77.5821">Jayanagar</option>
+            <option value="Marathahalli" data-lat="12.9591" data-lng="77.7012">Marathahalli</option>
+          </select></label>
+          <label>Open seats<select name="seats"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+          <label>Suggested split (₹)<input name="fare" type="number" min="0" max="9999" value="100" inputmode="numeric"></label>
+        </div>
+        <p class="form-note" id="form-note">Pickup is your current map pin; the selected destination sets the route.</p>
+        <button class="submit-offer" type="submit">Post my ride <span>↗</span></button>
+      </form>
+    </dialog>
+
+    <dialog class="ride-dialog" id="ride-dialog" aria-labelledby="ride-detail-name">
+      <section class="ride-detail">
+        <header class="ride-detail-head">
+          <span class="eyebrow">RIDE DETAILS</span>
+          <button class="dialog-close" id="close-ride-details" type="button" aria-label="Close ride details">×</button>
+        </header>
+        <div class="ride-driver">
+          <div class="avatar ride-detail-avatar" id="detail-avatar">AR</div>
+          <div class="ride-driver-copy">
+            <h2 id="ride-detail-name">Driver name</h2>
+            <div class="ride-driver-meta"><span id="ride-detail-rating">★ 5.0</span><span class="meta-divider">·</span><span id="ride-detail-car">Car</span></div>
+          </div>
+          <div class="detail-price"><strong id="ride-detail-fare">₹90</strong><span>per seat</span></div>
+        </div>
+        <div class="detail-route">
+          <div class="detail-route-line" aria-hidden="true"><span></span><i></i><span></span></div>
+          <div class="detail-stops">
+            <div><span class="detail-stop-label">PICKUP</span><strong id="ride-detail-from">MG Road</strong></div>
+            <div><span class="detail-stop-label">DROP-OFF</span><strong id="ride-detail-to">Indiranagar</strong></div>
+          </div>
+        </div>
+        <div class="ride-detail-facts"><span id="ride-detail-seats">2 seats open</span><span id="ride-detail-distance">310 m away</span><span id="ride-detail-time">3 min</span></div>
+        <label class="request-message-label" for="request-message">Message the driver <span>OPTIONAL</span><textarea id="request-message" maxlength="300" placeholder="Hi, I’m heading that way too."></textarea></label>
+        <p class="ride-request-note" id="ride-request-note" aria-live="polite">Send a request to ask the driver to join.</p>
+        <button class="submit-offer reserve-button" id="reserve-seat" type="button">Request to join <span>↗</span></button>
+      </section>
+    </dialog>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
